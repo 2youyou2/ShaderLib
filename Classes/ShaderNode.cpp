@@ -2,15 +2,24 @@
 
 using namespace cocos2d;
 
+///---------------------------------------
+// 
+// ShaderNode
+// 
+///---------------------------------------
+enum 
+{
+    SIZE_X = 256,
+    SIZE_Y = 256,
+};
+
 ShaderNode::ShaderNode()
     :_center(Vertex2F(0.0f, 0.0f))
-    ,_resolution(vertex2(0.0f, 0.0f))
+    ,_resolution(Vertex2F(0.0f, 0.0f))
     ,_time(0.0f)
     ,_uniformCenter(0)
     ,_uniformResolution(0)
     ,_uniformTime(0)
-    ,_uniformMouse(0)
-    ,_uniformTex(0)
 {
 }
 
@@ -20,7 +29,7 @@ ShaderNode::~ShaderNode()
 
 ShaderNode* ShaderNode::create(const char *vert, const char *frag)
 {
-    ShaderNode *node = new ShaderNode();
+    auto node = new ShaderNode();
     node->initWithVertex(vert, frag);
     node->autorelease();
 
@@ -29,13 +38,23 @@ ShaderNode* ShaderNode::create(const char *vert, const char *frag)
 
 bool ShaderNode::initWithVertex(const char *vert, const char *frag)
 {
+#if CC_ENABLE_CACHE_TEXTURE_DATA
+    auto listener = EventListenerCustom::create(EVENT_COME_TO_FOREGROUND, [this](EventCustom* event){
+        this->setShaderProgram(nullptr);
+        loadShaderVertex(_vertFileName.c_str(), _fragFileName.c_str());
+    });
+
+    _eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+#endif
+
     loadShaderVertex(vert, frag);
 
     _time = 0;
-    _resolution = Vertex2F(_size_x, _size_y);
 
-    setContentSize(Size(256, 256));
-    setAnchorPoint(ccp(0.5f, 0.5f));
+    scheduleUpdate();
+
+    setContentSize(Size(SIZE_X, SIZE_Y));
+    setAnchorPoint(Point(0.5f, 0.5f));
 
     _vertFileName = vert;
     _fragFileName = frag;
@@ -43,27 +62,19 @@ bool ShaderNode::initWithVertex(const char *vert, const char *frag)
     return true;
 }
 
-void ShaderNode::onEnter()
-{
-    this->setShaderProgram(NULL);
-    loadShaderVertex(_vertFileName.c_str(), _fragFileName.c_str());
-}
-
 void ShaderNode::loadShaderVertex(const char *vert, const char *frag)
 {
-    CCGLProgram *shader = new CCGLProgram();
-    shader->initWithVertexShaderFilename(vert, frag);
+    auto shader = new GLProgram();
+    shader->initWithFilenames(vert, frag);
 
-    shader->addAttribute("aVertex", kCCVertexAttrib_Position);
+    shader->bindAttribLocation("aVertex", GLProgram::VERTEX_ATTRIB_POSITION);
     shader->link();
 
     shader->updateUniforms();
 
-    _uniformCenter = glGetUniformLocation(shader->getProgram(), "center");
-    _uniformResolution = glGetUniformLocation(shader->getProgram(), "resolution");
-    _uniformTime = glGetUniformLocation(shader->getProgram(), "time");
-    _uniformMouse = glGetUniformLocation(shader->getProgram(), "iMouse");
-    _uniformTex = glGetUniformLocation(shader->getProgram(),"iChannel0");
+    _uniformCenter = shader->getUniformLocation("center");
+    _uniformResolution = shader->getUniformLocation("resolution");
+    _uniformTime = shader->getUniformLocation("time");
 
     this->setShaderProgram(shader);
 
@@ -75,43 +86,47 @@ void ShaderNode::update(float dt)
     _time += dt;
 }
 
-void ShaderNode::setPosition(const CCPoint &newPosition)
+void ShaderNode::setPosition(const Point &newPosition)
 {
     Node::setPosition(newPosition);
-    Point position = getPosition();
-    _center = vertex2(position.x * CC_CONTENT_SCALE_FACTOR(), position.y * CC_CONTENT_SCALE_FACTOR());
+    auto position = getPosition();
+    _center = Vertex2F(position.x * CC_CONTENT_SCALE_FACTOR(), position.y * CC_CONTENT_SCALE_FACTOR());
 }
 
-void ShaderNode::draw(cocos2d::Renderer *renderer, const kmMat4& transform, bool transformUpdated)
+void ShaderNode::setContentSize(const Size & size)
 {
-    CC_NODE_DRAW_SETUP();
+    Node::setContentSize(size);
 
-    float w = _contentSize.width, h = _contentSize.height;
-    GLfloat vertices[12] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
+    _resolution = Vertex2F(size.width, size.height);
+}
 
-    //
-    // Uniforms
-    //
-    getShaderProgram()->setUniformLocationWith2f(_uniformCenter, _center.x, _center.y);
-    getShaderProgram()->setUniformLocationWith2f(_uniformResolution, _resolution.x, _resolution.y);
+void ShaderNode::draw(Renderer *renderer, const kmMat4 &transform, bool transformUpdated)
+{
+    _customCommand.init(_globalZOrder);
+    _customCommand.func = CC_CALLBACK_0(ShaderNode::onDraw, this, transform, transformUpdated);
+    renderer->addCommand(&_customCommand);
+}
 
+void ShaderNode::onDraw(const kmMat4 &transform, bool transformUpdated)
+{
+    auto shader = getShaderProgram();
+    shader->use();
+    shader->setUniformsForBuiltins(transform);
+    shader->setUniformLocationWith2f(_uniformCenter, _center.x, _center.y);
+    shader->setUniformLocationWith2f(_uniformResolution, _resolution.x, _resolution.y);
 
     // time changes all the time, so it is Ok to call OpenGL directly, and not the "cached" version
     glUniform1f(_uniformTime, _time);
 
-    ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position );
+    GL::enableVertexAttribs( cocos2d::GL::VERTEX_ATTRIB_FLAG_POSITION );
 
-    glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+    float w = _contentSize.width, h = _contentSize.height;
+    GLfloat vertices[12] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
+
+    glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, vertices);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    CC_INCREMENT_GL_DRAWS(1);
-}
+    CC_INCREMENT_GL_DRAWN_BATCHES_AND_VERTICES(1,6);
 
-void ShaderNode::setContentSize(const Size& contentSize)
-{
-    Node::setContentSize(contentSize);
-
-    _resolution.x = contentSize.width;
-    _resolution.y = contentSize.height;
 }
