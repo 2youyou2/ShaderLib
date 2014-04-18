@@ -6,8 +6,6 @@ precision highp float;
 
 uniform vec2 center;
 uniform vec2 resolution;
-uniform vec4 iMouse; 
-uniform sampler2D iChannel0;
 
 float iGlobalTime = CC_Time[1];
 vec2 iResolution = resolution;

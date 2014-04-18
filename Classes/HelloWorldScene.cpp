@@ -30,7 +30,7 @@ bool HelloWorld::init()
     
     Size visibleSize = Director::getInstance()->getVisibleSize();
     
-    ShaderNode *sn = ShaderNode::create("shaders/example_Monjori.vsh", "shaders/example_Monjori.fsh");
+    ShaderNode *sn = ShaderNode::create("shaders/test.vsh", "shaders/test.fsh");
 
     sn->setPosition(Point(visibleSize.width/2, visibleSize.height/2));
     sn->setContentSize(Size(visibleSize.width, visibleSize.height));
