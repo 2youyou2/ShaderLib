@@ -30,11 +30,15 @@ bool HelloWorld::init()
     
     Size visibleSize = Director::getInstance()->getVisibleSize();
     
-    ShaderNode *sn = ShaderNode::create("shaders/test.vsh", "shaders/test.fsh");
+    ShaderNode *sn = ShaderNode::create("shaders/flame.vsh", "shaders/flame.fsh");
 
     sn->setPosition(Point(visibleSize.width/2, visibleSize.height/2));
     sn->setContentSize(Size(visibleSize.width, visibleSize.height));
     addChild(sn);
+// 
+//     Sprite* sprite = Sprite::create("HelloWorld.png");
+//     sprite->setPosition(Point(visibleSize.width/2, visibleSize.height/2));
+//     addChild(sprite);
 
     return true;
 }

@@ -39,8 +39,8 @@ float fworley(vec2 p) {
 
 void main() {
 	vec2 uv = gl_FragCoord.xy / iResolution.xy;
-	float t = fworley(uv * iResolution.xy / 600.);
-	t *= exp(-length2(abs(2.*uv - 1.)));
-	float r = length(abs(2.*uv - 1.) * iResolution.xy);
+
+ 	float t = fworley(uv * iResolution.xy / 600.);
+ 	t *= exp(-length2(abs(2.*uv - 1.)));
 	gl_FragColor = vec4(t * vec3(1.8, 1.8*t, .1 + pow(t, 2.-t)), 1.);
 }

@@ -67,14 +67,14 @@ void ShaderNode::loadShaderVertex(const char *vert, const char *frag)
     auto shader = new GLProgram();
     shader->initWithFilenames(vert, frag);
 
-    shader->bindAttribLocation("aVertex", GLProgram::VERTEX_ATTRIB_POSITION);
+    shader->bindAttribLocation(GLProgram::ATTRIBUTE_NAME_POSITION, GLProgram::VERTEX_ATTRIB_POSITION);
     shader->link();
 
     shader->updateUniforms();
 
-    _uniformCenter = shader->getUniformLocation("center");
-    _uniformResolution = shader->getUniformLocation("resolution");
-    _uniformTime = shader->getUniformLocation("time");
+    _uniformCenter      = shader->getUniformLocation("center");
+    _uniformResolution  = shader->getUniformLocation("resolution");
+    _uniformTime        = shader->getUniformLocation("time");
 
     this->setShaderProgram(shader);
 
@@ -121,7 +121,7 @@ void ShaderNode::onDraw(const kmMat4 &transform, bool transformUpdated)
     GL::enableVertexAttribs( cocos2d::GL::VERTEX_ATTRIB_FLAG_POSITION );
 
     float w = _contentSize.width, h = _contentSize.height;
-    GLfloat vertices[12] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
+    GLfloat vertices[] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
 
     glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0, vertices);
 
