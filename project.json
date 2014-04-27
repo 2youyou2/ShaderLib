@@ -1,0 +1,22 @@
+{
+    "project_type": "javascript",
+
+    "debugMode" : 0,
+    "showFPS" : false,
+    "frameRate" : 60,
+    "id" : "gameCanvas",
+    "renderMode" : 0,
+    "engineDir":"frameworks/cocos2d-html5",
+    "classReleaseMode":true,
+    "modules" : ["cocos2d", "chipmunk"],
+
+    "jsList" : [
+        "src/resource.js",
+        "src/ui.js",
+        "src/consts.js",
+        "src/kraken.js",
+        "src/inputs.js",
+        "src/ships.js",
+        "src/app.js"
+    ]
+}
